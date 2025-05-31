@@ -104,6 +104,9 @@ def update_order(order_id: int):
 
     data = request.get_json(force=True)
 
+    if "order" in data and "credit_card" in data:
+        error("invalid-fields", "Ne pas fournir 'credit_card' en même temps que 'order'")
+
     # 1️⃣ ajout des infos client ------------------------------------------------
     if "order" in data:
         info = data["order"]
@@ -132,6 +135,14 @@ def update_order(order_id: int):
     if "credit_card" in data:
         if order.paid:
             error("already-paid", "La commande a déjà été payée.")
+            
+        if not order.email:
+            error("missing-fields", "L’adresse courriel est obligatoire avant le paiement.")
+
+        required_ship_fields = [order.country, order.address, order.postal_code, order.city, order.province]
+        if not all(required_ship_fields):
+            error("missing-fields", "Les informations d’expédition sont obligatoires avant le paiement.")
+
         if not (order.email and order.country):
             error("missing-fields", "Les informations client sont nécessaires avant le paiement")
 
