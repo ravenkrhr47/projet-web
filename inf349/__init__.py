@@ -1,14 +1,29 @@
-from flask import Flask, jsonify          # ← ajoute jsonify
+from flask import Flask, jsonify# ← ajoute jsonify
+from flask.json.provider import DefaultJSONProvider   # ← ❶ import manquant
+
 from peewee import *
 from playhouse.sqlite_ext import SqliteExtDatabase
 from config import config
 import click
 
 db = SqliteExtDatabase(config.DATABASE)
+# Provider UTF-8 sans échappement \uXXXX
+class UTF8JSONProvider(DefaultJSONProvider):
+    def dumps(self, obj, **kwargs):
+        kwargs.setdefault("ensure_ascii", False)
+        return super().dumps(obj, **kwargs)
+
+    def loads(self, s, **kwargs):
+        return super().loads(s, **kwargs)
 
 def create_app():
     app = Flask(__name__)
+    
+
     app.config.from_object("config.config")
+    app.json = UTF8JSONProvider(app)  # 🔧 empêche l’échappement Unicode
+
+    
 
     # --- Connexion Peewee par requête ---
     @app.before_request
